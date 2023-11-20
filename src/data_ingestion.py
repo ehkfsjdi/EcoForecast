@@ -1,7 +1,9 @@
 import argparse
 import datetime
 import pandas as pd
-from utils import perform_get_request, xml_to_load_dataframe, xml_to_gen_data
+from utils import perform_get_request, xml_to_load_dataframe, xml_to_gen_data, measure_CPU_and_memory_usage
+import time
+
 
 def get_load_data_from_entsoe(regions, periodStart='202302240000', periodEnd='202303240000', output_path='./data'):
     
@@ -30,7 +32,7 @@ def get_load_data_from_entsoe(regions, periodStart='202302240000', periodEnd='20
         response_content = perform_get_request(url, params)
 
         # Response content is a string of XML data
-        df = xml_to_load_dataframe(response_content, 'Load')
+        df = xml_to_load_dataframe(response_content)
 
         # Save the DataFrame to a CSV file
         df.to_csv(f'{output_path}/load_{region}.csv', index=False)
@@ -40,6 +42,12 @@ def get_load_data_from_entsoe(regions, periodStart='202302240000', periodEnd='20
 def get_gen_data_from_entsoe(regions, periodStart='202302240000', periodEnd='202303240000', output_path='./data'):
     
     # TODO: There is a period range limit of 1 day for this API. Process in 1 day chunks if needed
+    # The renewable energy types and codes
+    renewable_psr_types = {
+        'B01': 'Biomass', 'B09': 'Geothermal', 'B10':'Hydro_Pumped_Storage', 
+        'B11': 'Hydro_Run-of-river_and_poundage', 'B12': 'Hydro_Water_Reservoir', 'B13': 'Marine', 
+        'B15': 'Other_renewable', 'B16': 'Solar', 'B18': 'Wind_Offshore', 'B19': 'Wind_Onshore'
+    }
 
     # URL of the RESTful API
     url = 'https://web-api.tp.entsoe.eu/api'
@@ -61,19 +69,21 @@ def get_gen_data_from_entsoe(regions, periodStart='202302240000', periodEnd='202
         params['outBiddingZone_Domain'] = area_code
         params['in_Domain'] = area_code
     
-        # Use the requests library to get data from the API for the specified time range
-        response_content = perform_get_request(url, params)
+        # Only fetch the data of renewable energy
+        for psr_type in renewable_psr_types.keys():
+            params['PsrType'] = psr_type
+            # Use the requests library to get data from the API for the specified time range
+            response_content = perform_get_request(url, params)
 
-        # Response content is a string of XML data
-        dfs = xml_to_gen_data(response_content)
+            # Response content is a string of XML data
+            dfs = xml_to_gen_data(response_content)
 
-        # Save the dfs to CSV files
-        for psr_type, df in dfs.items():
-            # Save the DataFrame to a CSV file
-            df.to_csv(f'{output_path}/gen_{region}_{psr_type}.csv', index=False)
+            # Save the dfs to CSV files
+            for psr_type, df in dfs.items():
+                # Save the DataFrame to a CSV file
+                df.to_csv(f'{output_path}/gen_{region}_{renewable_psr_types[psr_type]}.csv', index=False)
     
     return
-
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description='Data ingestion script for Energy Forecasting Hackathon')
@@ -122,5 +132,22 @@ def main(start_time, end_time, output_path):
     get_gen_data_from_entsoe(regions, start_time, end_time, output_path)
 
 if __name__ == "__main__":
+    # Measure usage of CPU and memory and time at the start of ingestion
+    start_cpu, start_memory = measure_CPU_and_memory_usage()
+    # Start time
+    start_time = time.time()
     args = parse_arguments()
     main(args.start_time, args.end_time, args.output_path)
+    # End time
+    end_time = time.time()
+    end_cpu, end_memory = measure_CPU_and_memory_usage()
+
+    # Calculate the used CPU and memory
+    cpu_usage = end_cpu - start_cpu
+    memory_usage = end_memory - start_memory
+
+    # Calculate the ingestion time
+    ingestion_time = end_time - start_time
+    print(f"Data ingestion time: {ingestion_time} seconds")
+    print(f"CPU usage: {cpu_usage}%")
+    print(f"Memory usage: {memory_usage} MB")

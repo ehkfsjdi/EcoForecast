@@ -1,0 +1,8 @@
+pandas
+numpy
+torch  # PyTorch
+json
+skorch
+matplotlib
+scikit-learn
+psutil

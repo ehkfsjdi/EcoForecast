@@ -3,6 +3,23 @@ from datetime import datetime, timedelta
 import xml.etree.ElementTree as ET
 import pandas as pd
 from datetime import datetime, timedelta
+import psutil
+import os
+
+def measure_CPU_and_memory_usage():
+    # Measure CPU and memory usage
+    # Get current process ID
+    pid = os.getpid()
+    process = psutil.Process(pid)
+    
+    # Measure CPU usage
+    cpu_usage = process.cpu_percent(interval=1)
+    
+    # Measure memory usage
+    memory_usage = process.memory_info().rss / (1024 ** 2)  # in megabytes
+    
+    return cpu_usage, memory_usage
+
 
 def xml_to_gen_data(xml_data) -> dict:
     """
