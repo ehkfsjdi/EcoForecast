@@ -5,7 +5,8 @@
 **Data**
 The training data is imported from 2022-01-01 to 2023-01-01. Of generation data, only reneweble energy generation data is imported.
 
-The data is split 80/20 to training and test sets. The training set is again split 80/20 to training and validation sets. The data is from ENTSO-E Transparency portal.
+The data is split to training and test sets, so that the test set is 442 data points long. However, this is not the asked 20% of the dataset because the requirements were clarified after the data processing part was already implemented according to previous understanding of instructions. 
+The training set is split 80/20 to training and validation sets. The data is from ENTSO-E Transparency portal.
 
 The following renewable energy sources are included in input data:
     - Biomass
